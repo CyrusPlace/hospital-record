@@ -1,34 +1,48 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+contract Hospital {
 
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
-
-contract Lock {
-    uint public unlockTime;
-    address payable public owner;
-
-    event Withdrawal(uint amount, uint when);
-
-    constructor(uint _unlockTime) payable {
-        require(
-            block.timestamp < _unlockTime,
-            "Unlock time should be in the future"
-        );
-
-        unlockTime = _unlockTime;
-        owner = payable(msg.sender);
+    // Define a struct to hold patient information
+    struct Patient {
+        bool isAdmitted;
+        uint256 bedspace;
     }
 
-    function withdraw() public {
-        // Uncomment this line, and the import of "hardhat/console.sol", to print a log in your terminal
-        // console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
+    // Address of the doctor who is allowed to set patient records
+    address doctor;
 
-        require(block.timestamp >= unlockTime, "You can't withdraw yet");
-        require(msg.sender == owner, "You aren't the owner");
+    // Mapping to hold patient records
+    mapping(string => Patient) patients;
 
-        emit Withdrawal(address(this).balance, block.timestamp);
 
-        owner.transfer(address(this).balance);
+
+    // Constructor to set the initial doctor
+    constructor() {
+        doctor = msg.sender;
     }
-}
+
+    // Function for the doctor to set a patient's record
+    function setPatientRecord(string memory _patientName, bool _isAdmitted) public  {
+         require(msg.sender == doctor, "you are not a doctor");
+        
+        patients[_patientName] = Patient({
+            isAdmitted: _isAdmitted,
+            bedspace: 0
+        });
+    }
+
+    // Function to provide a bedspace to a patient
+    function provideBedspace(string memory _patientName, uint256 _bedspace) public {
+        Patient storage patient = patients[_patientName];
+
+        // Ensure the patient exists and is admitted
+        if (!patient.isAdmitted) {
+            revert("Patient must be admitted before a bedspace can be provided");
+        } 
+
+        patient.bedspace = _bedspace;
+
+        // Use assert to ensure bedspace is correctly assigned
+        assert(patient.bedspace == _bedspace);
+    }
+};
